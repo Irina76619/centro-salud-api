@@ -59,11 +59,12 @@ public class SecurityConfig {
     }
 
     /** BCrypt: guarda las claves "hasheadas" (no se pueden revertir a texto). */
+    /** BCrypt: guarda y valida las claves "hasheadas". */
     @Bean
-    @SuppressWarnings("deprecation")
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance();
+        return new BCryptPasswordEncoder();
     }
+
 
 
     /** Permite que el frontend (otro dominio, ej. Vercel) llame a esta API. */
