@@ -44,6 +44,10 @@ public class AdminCitaController {
     @PatchMapping("/{id}/cancelar")
     public CitaRes cancelar(@PathVariable Long id) { return service.cancelar(id); }
 
+    /** Marca una cita pendiente como "no asistio". */
+    @PatchMapping("/{id}/no-asistio")
+    public CitaRes noAsistio(@PathVariable Long id) { return service.marcarNoAsistio(id); }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void eliminar(@PathVariable Long id) { service.eliminar(id); }

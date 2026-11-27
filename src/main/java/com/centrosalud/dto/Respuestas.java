@@ -43,6 +43,9 @@ public final class Respuestas {
     /** Par etiqueta/total, pensado para graficos. */
     public record ConteoRes(String etiqueta, long total) { }
 
+    /** Reporte 7: inasistencias (citas NO_ASISTIO) por medico. */
+    public record NoAsistidasMedicoRes(String medico, String especialidad, long inasistencias) { }
+
     public record DashboardRes(long pacientes, long medicos, long especialidades,
                                long citasHoy, long pendientes, long atendidas, long canceladas) { }
 }

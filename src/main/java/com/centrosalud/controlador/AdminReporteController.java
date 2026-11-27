@@ -51,4 +51,7 @@ public class AdminReporteController {
 
     @GetMapping("/reportes/recetas-tratamientos")
     public List<HistorialDetalleRes> recetasYTratamientos() { return service.recetasYTratamientos(); }
+
+    @GetMapping("/reportes/no-asistidas-por-medico")
+    public List<NoAsistidasMedicoRes> noAsistidasPorMedico() { return service.noAsistidasPorMedico(); }
 }

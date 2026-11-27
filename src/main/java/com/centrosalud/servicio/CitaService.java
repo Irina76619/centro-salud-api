@@ -65,9 +65,7 @@ public class CitaService {
     @Transactional
     public CitaRes actualizar(Long id, CitaReq req) {
         Cita c = buscar(id);
-        if (c.getEstado() != EstadoCita.PENDIENTE) {
-            throw ApiException.reglaNegocio("Solo se pueden modificar citas pendientes");
-        }
+        exigirPendiente(c, "modificar");
         Paciente p = pacientes.findById(req.pacienteId()).orElseThrow(() -> ApiException.noEncontrado("Paciente", req.pacienteId()));
         Medico m = medicos.findById(req.medicoId()).orElseThrow(() -> ApiException.noEncontrado("Medico", req.medicoId()));
 
@@ -85,23 +83,49 @@ public class CitaService {
     @Transactional
     public CitaRes cancelar(Long id) {
         Cita c = buscar(id);
-        if (c.getEstado() != EstadoCita.PENDIENTE) {
-            throw ApiException.reglaNegocio("Solo se pueden cancelar citas pendientes");
-        }
+        exigirPendiente(c, "cancelar");
         c.setEstado(EstadoCita.CANCELADA);
+        return Mapeador.cita(c);
+    }
+
+    /** Marca una cita pendiente como NO_ASISTIO (el paciente no llego). Solo deja constancia, sin sanciones. */
+    @Transactional
+    public CitaRes marcarNoAsistio(Long id) {
+        Cita c = buscar(id);
+        exigirPendiente(c, "marcar como no asistio");
+        c.setEstado(EstadoCita.NO_ASISTIO);
         return Mapeador.cita(c);
     }
 
     @Transactional
     public void eliminar(Long id) {
-        citas.delete(buscar(id));   // recetas se borran en cascada; el historial queda con cita = null
+        Cita c = buscar(id);
+        if (c.getEstado() == EstadoCita.ATENDIDA) {
+            throw ApiException.reglaNegocio("No se puede eliminar una cita atendida");
+        }
+        if (c.getEstado() == EstadoCita.NO_ASISTIO) {
+            throw ApiException.reglaNegocio("No se puede eliminar una cita marcada como no asistio");
+        }
+        citas.delete(c);   // recetas se borran en cascada; el historial queda con cita = null
+    }
+
+    /** Solo las citas PENDIENTES admiten cambios; para las demas el mensaje explica que hacer. */
+    private void exigirPendiente(Cita c, String accion) {
+        if (c.getEstado() == EstadoCita.PENDIENTE) return;
+        if (c.getEstado() == EstadoCita.CANCELADA || c.getEstado() == EstadoCita.NO_ASISTIO) {
+            throw ApiException.reglaNegocio("No se puede " + accion + " una cita "
+                    + (c.getEstado() == EstadoCita.CANCELADA ? "cancelada" : "marcada como no asistio")
+                    + ": registra una cita nueva");
+        }
+        throw ApiException.reglaNegocio("Solo se pueden " + accion + " citas pendientes");
     }
 
     /**
      * Reglas de agenda:
      *  1) la fecha debe ser futura,
      *  2) el medico debe atender ese dia y a esa hora (segun sus Horarios),
-     *  3) el medico no puede tener otra cita activa a la misma hora.
+     *  3) el medico no puede tener otra cita activa a la misma hora
+     *     (CANCELADA y NO_ASISTIO no bloquean la hora).
      */
     private void validarAgenda(Medico medico, LocalDateTime fechaHora, Long excluirCitaId) {
         if (fechaHora.isBefore(Tiempo.ahora())) {
@@ -115,7 +139,8 @@ public class CitaService {
         if (!atiende) {
             throw ApiException.reglaNegocio("El medico no atiende los " + dia + " a las " + hora + " (revisa su horario)");
         }
-        if (citas.existeChoque(medico.getId(), fechaHora, EstadoCita.CANCELADA, excluirCitaId)) {
+        if (citas.existeChoque(medico.getId(), fechaHora,
+                List.of(EstadoCita.CANCELADA, EstadoCita.NO_ASISTIO), excluirCitaId)) {
             throw ApiException.conflicto("El medico ya tiene una cita a esa fecha y hora");
         }
     }

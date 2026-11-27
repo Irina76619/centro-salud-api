@@ -42,10 +42,10 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
 
     /** Regla de negocio: un medico no puede tener 2 citas activas a la misma hora. */
     @Query("select count(c) > 0 from Cita c where c.medico.id = :medicoId and c.fechaHora = :fechaHora "
-            + "and c.estado <> :excluido and c.id <> :excluirId")
+            + "and c.estado not in :excluidos and c.id <> :excluirId")
     boolean existeChoque(@Param("medicoId") Long medicoId,
                          @Param("fechaHora") LocalDateTime fechaHora,
-                         @Param("excluido") EstadoCita excluido,
+                         @Param("excluidos") List<EstadoCita> excluidos,
                          @Param("excluirId") Long excluirId);
 
     /** Pacientes que tienen (o tuvieron) al menos una cita con ese medico. */

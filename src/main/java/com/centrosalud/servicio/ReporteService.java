@@ -101,6 +101,19 @@ public class ReporteService {
         return historialService.todos();
     }
 
+    /** Reporte 7: citas no asistidas por medico (incluye medicos con 0). */
+    public List<NoAsistidasMedicoRes> noAsistidasPorMedico() {
+        Map<Long, Long> conteo = citas.findAllByOrderByFechaHoraAsc().stream()
+                .filter(c -> c.getEstado() == EstadoCita.NO_ASISTIO)
+                .collect(Collectors.groupingBy(c -> c.getMedico().getId(), Collectors.counting()));
+        return medicos.findAll(Sort.by("id")).stream()
+                .map(m -> new NoAsistidasMedicoRes(
+                        m.getNombreCompleto() + " (" + m.getCodigoMedico() + ")",
+                        m.getEspecialidad().getNombre(),
+                        conteo.getOrDefault(m.getId(), 0L)))
+                .toList();
+    }
+
     /** Tarjetas del panel principal del administrador. */
     public DashboardRes dashboard() {
         LocalDate hoy = Tiempo.hoy();

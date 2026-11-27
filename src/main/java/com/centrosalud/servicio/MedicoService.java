@@ -42,9 +42,8 @@ public class MedicoService {
 
     @Transactional
     public MedicoRes crear(MedicoReq req) {
-        if (req.clave() == null || req.clave().isBlank()) {
-            throw ApiException.reglaNegocio("La clave es obligatoria al registrar un medico");
-        }
+        // Para la demo: si la clave llega vacia, se usa 1234 por defecto
+        String clave = (req.clave() == null || req.clave().isBlank()) ? "1234" : req.clave();
         String codigo = req.codigoMedico().trim();
         if (medicos.existsByCodigoMedico(codigo)) {
             throw ApiException.conflicto("Ya existe un medico con el codigo " + codigo);
@@ -54,7 +53,7 @@ public class MedicoService {
         }
         Especialidad esp = buscarEspecialidad(req.especialidadId());
         Medico m = new Medico(req.dni(), req.nombre().trim(), req.apellidos().trim(), req.edad(),
-                codigo, encoder.encode(req.clave()), esp);
+                codigo, encoder.encode(clave), esp);
         return Mapeador.medico(medicos.save(m));
     }
 

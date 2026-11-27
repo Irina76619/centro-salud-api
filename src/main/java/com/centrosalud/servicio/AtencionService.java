@@ -116,8 +116,8 @@ public class AtencionService {
     @Transactional
     public RecetaRes agregarReceta(Long medicoId, Long citaId, RecetaReq req) {
         Cita cita = citaPropia(medicoId, citaId);
-        if (cita.getEstado() == EstadoCita.CANCELADA) {
-            throw ApiException.reglaNegocio("No se pueden agregar recetas a una cita cancelada");
+        if (cita.getEstado() == EstadoCita.CANCELADA || cita.getEstado() == EstadoCita.NO_ASISTIO) {
+            throw ApiException.reglaNegocio("No se pueden agregar recetas a una cita cancelada o no asistida");
         }
         Receta r = recetas.save(new Receta(req.medicamento().trim(), req.indicaciones().trim(), Tiempo.hoy(), cita));
         return Mapeador.receta(r);
